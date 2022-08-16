@@ -52,8 +52,9 @@ There are data sources for the following objects:
 
 ## Importing existing resources
 
-There is a possibility to import existing resources, enabling them to be managed by Terraform.
-As of now, there is a limitation: you have to write full resource's definition yourself.
+Terraform has the capability to import existing infrastructure. This allows users to take resources they have created by some other means and bring it under Terraform management.
+
+As of now, Infoblox provider plugin lacks this: you have to write full resource's definition yourself.
 
 In general, the process of importing an existing resource looks like this:
 
@@ -73,8 +74,4 @@ In general, the process of importing an existing resource looks like this:
 - issue a command of the form `terraform import RESOURCE_TYPE.RESOURCE_NAME RESOURCE_REFERENCE`.
   Example: `terraform import infoblox_a_record.a_rec_1_imported record:a/ZG5zLmJpbmRfYSQuX2RlZmF1bHQub3JnLmV4YW1wbGUsc3RhdGljMSwxLjIuMy40:rec-a-1.imported.test.com/default`
 
-Please, note that if some of resource's properties (supported by the Infoblox provider plugin) is not defined or
-is empty for the object on NIOS side, then appropriate resource's property must be empty or not defined.
-Otherwise, you will get a difference in the resource's actual state and resource's description you specified,
-and thus you will get a resource's update performed on the next `terraform apply` command invocation,
-which will actually set the value of the property to the one which you defined (ex. empty value).
+Please note that if some of resources' properties (supported by the Infoblox provider plugin) are not defined or empty for the object on NIOS side, then appropriate resource's property must be empty or not defined. Otherwise you will get a difference in the resource's actual state and resource's description you specified, and thus you will get a resource's update performed on the next `terraform apply` command invocation, which will actually set the value of the property to the one which you defined (ex. empty value).
