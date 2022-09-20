@@ -19,7 +19,8 @@ func resourceNetwork() *schema.Resource {
 			"network_view": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Network view name available in NIOS Server ('default' if not specified).",
+				Default:     "default",
+				Description: "Network view name available in NIOS Server.",
 			},
 			"parent_cidr": {
 				Type:        schema.TypeString,
@@ -71,9 +72,6 @@ func resourceNetwork() *schema.Resource {
 
 func resourceNetworkCreate(d *schema.ResourceData, m interface{}, isIPv6 bool) error {
 	networkViewName := d.Get("network_view").(string)
-	if networkViewName == "" {
-		networkViewName = "default"
-	}
 	parentCidr := d.Get("parent_cidr").(string)
 	prefixLen := d.Get("allocate_prefix_len").(int)
 	cidr := d.Get("cidr").(string)
