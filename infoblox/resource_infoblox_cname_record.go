@@ -121,18 +121,35 @@ func resourceCNAMERecordGet(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("getting CNAME Record with ID: %s failed: %s", d.Id(), err.Error())
 	}
 
-	if err = d.Set("alias", obj.Name); err != nil {
+	if obj.Name == nil {
+		return fmt.Errorf("no information about CNAME-record's name (alias) received from Infoblox NIOS server, object's reference '%s'; this must not happen", obj.Ref)
+	}
+	if obj.Canonical == nil {
+		return fmt.Errorf("no information about CNAME-record's canonical name received from Infoblox NIOS server, object's reference '%s'; this must not happen", obj.Ref)
+	}
+	if obj.View == nil {
+		return fmt.Errorf("no information about CNAME-record's DNS view received from Infoblox NIOS server, object's reference '%s'; this must not happen", obj.Ref)
+	}
+
+	if err = d.Set("alias", *obj.Name); err != nil {
 		return err
 	}
-	if err = d.Set("canonical", obj.Canonical); err != nil {
+	if err = d.Set("canonical", *obj.Canonical); err != nil {
 		return err
 	}
-	if err = d.Set("comment", obj.Comment); err != nil {
+	if err = d.Set("dns_view", *obj.View); err != nil {
 		return err
 	}
-	ttl := int(obj.Ttl)
-	if !obj.UseTtl {
-		ttl = ttlUndef
+
+	if obj.Comment != nil {
+		if err = d.Set("comment", *obj.Comment); err != nil {
+			return err
+		}
+	}
+
+	ttl := ttlUndef
+	if obj.UseTtl != nil && obj.Ttl != nil && *obj.UseTtl {
+		ttl = int(*obj.Ttl)
 	}
 	if err = d.Set("ttl", ttl); err != nil {
 		return err
@@ -149,9 +166,6 @@ func resourceCNAMERecordGet(d *schema.ResourceData, m interface{}) error {
 		if err = d.Set("ext_attrs", string(ea)); err != nil {
 			return err
 		}
-	}
-	if err = d.Set("dns_view", obj.View); err != nil {
-		return err
 	}
 
 	d.SetId(obj.Ref)
@@ -216,7 +230,7 @@ func resourceCNAMERecordUpdate(d *schema.ResourceData, m interface{}) error {
 	connector := m.(ibclient.IBConnector)
 	objMgr := ibclient.NewObjectManager(connector, "Terraform", tenantID)
 
-	recordCNAME, err := objMgr.UpdateCNAMERecord(d.Id(), canonical, alias, useTtl, ttl, comment, extAttrs)
+	recordCNAME, err := objMgr.UpdateCNAMERecord(d.Id(), dnsView, canonical, alias, useTtl, ttl, comment, extAttrs)
 	if err != nil {
 		return fmt.Errorf("updation of CNAME Record under %s DNS View failed: %s", dnsView, err.Error())
 	}

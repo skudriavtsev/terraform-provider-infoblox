@@ -85,8 +85,12 @@ func resourceIpAssociationRead(d *schema.ResourceData, m interface{}) error {
 			return fmt.Errorf("association with multiple IP addresses are not supported")
 		}
 
-		enableDhcpActualIpv6 = hostRec.Ipv6Addrs[0].EnableDhcp
-		duidActual = hostRec.Ipv6Addrs[0].Duid
+		hrEnableDhcp := hostRec.Ipv6Addrs[0].EnableDhcp
+		enableDhcpActualIpv6 = hrEnableDhcp != nil && *hrEnableDhcp
+		duidTemp := hostRec.Ipv6Addrs[0].Duid
+		if duidTemp != nil {
+			duidActual = *duidTemp
+		}
 	}
 
 	if hostRec.Ipv4Addrs != nil && len(hostRec.Ipv4Addrs) > 0 {
@@ -94,8 +98,12 @@ func resourceIpAssociationRead(d *schema.ResourceData, m interface{}) error {
 			return fmt.Errorf("association with multiple IP addresses are not supported")
 		}
 
-		enableDhcpActualIpv4 = hostRec.Ipv4Addrs[0].EnableDhcp
-		macAddrActual = hostRec.Ipv4Addrs[0].Mac
+		hrEnableDhcp := hostRec.Ipv4Addrs[0].EnableDhcp
+		enableDhcpActualIpv4 = hrEnableDhcp != nil && *hrEnableDhcp
+		macAddrTemp := hostRec.Ipv4Addrs[0].Mac
+		if macAddrTemp != nil {
+			macAddrActual = *macAddrTemp
+		}
 	}
 
 	enableDhcpActual = enableDhcpActualIpv4 || enableDhcpActualIpv6
@@ -203,11 +211,21 @@ func resourceIpAssociationCreateUpdateCommon(
 
 	if len(hostRec.Ipv4Addrs) > 0 {
 		recIpV4Addr = &hostRec.Ipv4Addrs[0]
-		ipV4Addr = recIpV4Addr.Ipv4Addr
+		if recIpV4Addr.Ipv4Addr == nil {
+			return fmt.Errorf(
+				"no IPv4 address information received from Infoblox NIOS server for Host-record with reference '%s'; this must not happen",
+				hostRec.Ref)
+		}
+		ipV4Addr = *recIpV4Addr.Ipv4Addr
 	}
 	if len(hostRec.Ipv6Addrs) > 0 {
 		recIpV6Addr = &hostRec.Ipv6Addrs[0]
-		ipV6Addr = recIpV6Addr.Ipv6Addr
+		if recIpV6Addr.Ipv6Addr == nil {
+			return fmt.Errorf(
+				"no IPv6 address information received from Infoblox NIOS server for Host-record with reference '%s'; this must not happen",
+				hostRec.Ref)
+		}
+		ipV6Addr = *recIpV6Addr.Ipv6Addr
 	}
 
 	mac = strings.Replace(mac, "-", ":", -1)
@@ -218,23 +236,49 @@ func resourceIpAssociationCreateUpdateCommon(
 				tenantId = tempStrVal
 			}
 		}
-
 	}
+
+	name := hostRec.Name
+	if name == nil {
+		return fmt.Errorf(
+			"no information received from Infoblox NIOS server for Host-record's name with reference '%s'; this must not happen",
+			hostRec.Ref)
+	}
+
+	enableDns := hostRec.EnableDns != nil && *hostRec.EnableDns
+	view := hostRec.View
+	if view == nil && enableDns {
+		return fmt.Errorf(
+			"no information received from Infoblox NIOS server for Host-record's DNS view with reference '%s'; this must not happen",
+			hostRec.Ref)
+	}
+
+	useTtl := hostRec.UseTtl != nil && *hostRec.UseTtl
+	var ttl uint32
+	if useTtl && hostRec.Ttl != nil {
+		ttl = *hostRec.Ttl
+	}
+
+	var comment string
+	if hostRec.Comment != nil {
+		comment = *hostRec.Comment
+	}
+
 	objMgr := ibclient.NewObjectManager(
 		m.(ibclient.IBConnector), "Terraform", tenantId)
 
 	_, err = objMgr.UpdateHostRecord(
 		hostRec.Ref,
-		hostRec.EnableDns,
+		enableDns,
 		enableDhcp,
-		hostRec.Name,
+		*name,
 		hostRec.NetworkView,
-		hostRec.View,
+		*view,
 		"", "",
 		ipV4Addr, ipV6Addr,
 		mac, duid,
-		hostRec.UseTtl, hostRec.Ttl,
-		hostRec.Comment,
+		useTtl, ttl,
+		comment,
 		hostRec.Ea, []string{})
 	if err != nil {
 		return fmt.Errorf(

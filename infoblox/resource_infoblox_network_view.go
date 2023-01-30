@@ -90,13 +90,19 @@ func resourceNetworkViewRead(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Failed to get Network View : %s", err.Error())
 	}
 
-	d.SetId(obj.Ref)
-	if err = d.Set("name", obj.Name); err != nil {
+	if obj.Name == nil {
+		return fmt.Errorf("no information received from Infoblox NIOS server about network object with reference '%s'; this must not happen", obj.Ref)
+	}
+	if err = d.Set("name", *obj.Name); err != nil {
 		return err
 	}
-	if err = d.Set("comment", obj.Comment); err != nil {
-		return err
+
+	if obj.Comment != nil {
+		if err = d.Set("comment", *obj.Comment); err != nil {
+			return err
+		}
 	}
+
 	if obj.Ea != nil && len(obj.Ea) > 0 {
 		// TODO: temporary scaffold, need to rework marshalling/unmarshalling of EAs
 		//       (avoiding additional layer of keys ("value" key)
@@ -109,6 +115,7 @@ func resourceNetworkViewRead(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	}
+	d.SetId(obj.Ref)
 
 	return nil
 }

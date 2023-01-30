@@ -2,6 +2,8 @@ package infoblox
 
 import (
 	"fmt"
+	"github.com/infobloxopen/infoblox-go-client/v2/utils"
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -68,25 +70,44 @@ func validateRecordCNAME(
 			}
 		}
 
+		expView := expectedValue.View
+		if !reflect.DeepEqual(recCNAME.View, expView) {
+			return fmt.Errorf(
+				"the value of 'dns_view' field is '%s', but expected '%s'",
+				safePtrValue(recCNAME.View), safePtrValue(expView))
+		}
+
 		expCanonical := expectedValue.Canonical
-		if recCNAME.Canonical != expCanonical {
+		if !reflect.DeepEqual(recCNAME.Canonical, expCanonical) {
 			return fmt.Errorf(
 				"the value of 'canonical' field is '%s', but expected '%s'",
-				recCNAME.Canonical, expCanonical)
+				safePtrValue(recCNAME.Canonical), safePtrValue(expCanonical))
 		}
 
 		expName := expectedValue.Name
-		if recCNAME.Name != expName {
+		if !reflect.DeepEqual(recCNAME.Name, expName) {
 			return fmt.Errorf(
 				"the value of 'alias Name' field is '%s', but expected '%s'",
-				recCNAME.Name, expName)
+				safePtrValue(recCNAME.Name), safePtrValue(expName))
+		}
+
+		if !reflect.DeepEqual(recCNAME.UseTtl, expectedValue.UseTtl) {
+			return fmt.Errorf(
+				"the value of 'use_ttl' field does not match: got '%s', expected '%s'",
+				safePtrValue(recCNAME.UseTtl), safePtrValue(expectedValue.UseTtl))
+		} else if recCNAME.UseTtl != nil && *recCNAME.UseTtl {
+			if !reflect.DeepEqual(recCNAME.Ttl, expectedValue.Ttl) {
+				return fmt.Errorf(
+					"the value of 'ttl' field does not match: got '%s', expected '%s'",
+					safePtrValue(recCNAME.Ttl), safePtrValue(expectedValue.Ttl))
+			}
 		}
 
 		expComment := expectedValue.Comment
-		if recCNAME.Comment != expComment {
+		if !reflect.DeepEqual(recCNAME.Comment, expComment) {
 			return fmt.Errorf(
 				"the value of 'comment' field is '%s', but expected '%s'",
-				recCNAME.Comment, expComment)
+				safePtrValue(recCNAME.Comment), safePtrValue(expComment))
 		}
 
 		// the rest is about extensible attributes
@@ -118,11 +139,12 @@ func TestAccResourceCNAMERecord(t *testing.T) {
 				Check: validateRecordCNAME(
 					"infoblox_cname_record.foo",
 					&ibclient.RecordCNAME{
-						View:      "default",
-						Canonical: "test-canonicalName.test.com",
-						Name:      "test-aliasname.test.com",
+						View:      utils.StringPtr("default"),
+						Canonical: utils.StringPtr("test-canonicalName.test.com"),
+						Name:      utils.StringPtr("test-aliasname.test.com"),
 						Zone:      "test.com",
-						Comment:   "CNAME record created",
+						Comment:   utils.StringPtr("CNAME record created"),
+						UseTtl:    utils.BoolPtr(false),
 						Ea: ibclient.EA{
 							"Tenant ID": "terraform_test_tenant",
 							"Location":  "Test loc",
@@ -137,11 +159,12 @@ func TestAccResourceCNAMERecord(t *testing.T) {
 				Check: validateRecordCNAME(
 					"infoblox_cname_record.foo",
 					&ibclient.RecordCNAME{
-						View:      "default",
-						Canonical: "test-canonicalName.test.com",
-						Name:      "test-aliasname.test.com",
+						View:      utils.StringPtr("default"),
+						Canonical: utils.StringPtr("test-canonicalName.test.com"),
+						Name:      utils.StringPtr("test-aliasname.test.com"),
 						Zone:      "test.com",
-						Comment:   "CNAME record updated",
+						Comment:   utils.StringPtr("CNAME record updated"),
+						UseTtl:    utils.BoolPtr(false),
 						Ea: ibclient.EA{
 							"Tenant ID": "terraform_test_tenant",
 							"Location":  "Test loc 2",

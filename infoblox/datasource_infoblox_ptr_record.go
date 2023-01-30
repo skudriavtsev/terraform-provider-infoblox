@@ -75,21 +75,37 @@ func dataSourcePtrRecordRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	d.SetId(ptrRecord.Ref)
-	if err := d.Set("ttl", ptrRecord.Ttl); err != nil {
-		return err
+	ttl := ttlUndef
+	if ptrRecord.UseTtl != nil && ptrRecord.Ttl != nil && *ptrRecord.UseTtl {
+		ttl = int(*ptrRecord.Ttl)
 	}
-	if err := d.Set("comment", ptrRecord.Comment); err != nil {
-		return err
-	}
-
-	if err := d.Set("record_name", ptrRecord.Name); err != nil {
+	if err = d.Set("ttl", ttl); err != nil {
 		return err
 	}
 
-	if ptrRecord.Ipv4Addr != "" {
-		ipAddr = ptrRecord.Ipv4Addr
+	var comment string
+	if ptrRecord.Comment != nil {
+		comment = *ptrRecord.Comment
+	}
+	if err := d.Set("comment", comment); err != nil {
+		return err
+	}
+
+	if ptrRecord.Name == nil {
+		return fmt.Errorf(
+			"no information received from Infoblox NIOS server for PTR-record's name with reference '%s'; this must not happen", ptrRecord.Ref)
+	}
+	if err := d.Set("record_name", *ptrRecord.Name); err != nil {
+		return err
+	}
+
+	if ptrRecord.Ipv4Addr != nil && *ptrRecord.Ipv4Addr != "" {
+		ipAddr = *ptrRecord.Ipv4Addr
+	} else if ptrRecord.Ipv6Addr != nil && *ptrRecord.Ipv6Addr != "" {
+		ipAddr = *ptrRecord.Ipv6Addr
 	} else {
-		ipAddr = ptrRecord.Ipv6Addr
+		return fmt.Errorf(
+			"no IP address information received from Infoblox NIOS server for PTR-record with reference '%s'; this must not happen", ptrRecord.Ref)
 	}
 	if err := d.Set("ip_addr", ipAddr); err != nil {
 		return err
@@ -103,5 +119,6 @@ func dataSourcePtrRecordRead(d *schema.ResourceData, m interface{}) error {
 	if err := d.Set("ext_attrs", string(dsExtAttrs)); err != nil {
 		return err
 	}
+
 	return nil
 }

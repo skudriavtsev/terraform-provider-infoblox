@@ -118,7 +118,10 @@ func resourceARecordCreate(d *schema.ResourceData, m interface{}) error {
 	}
 	d.SetId(newRecord.Ref)
 
-	if err = d.Set("ip_addr", newRecord.Ipv4Addr); err != nil {
+	if newRecord.Ipv4Addr == nil {
+		return fmt.Errorf("no IP address information received from Infoblox NIOS server for A-record with reference '%s'; this must not happen", newRecord.Ref)
+	}
+	if err = d.Set("ip_addr", *newRecord.Ipv4Addr); err != nil {
 		return err
 	}
 	if val, ok := d.GetOk("network_view"); !ok || val.(string) == "" {
@@ -128,7 +131,10 @@ func resourceARecordCreate(d *schema.ResourceData, m interface{}) error {
 				"error while retrieving information about DNS view '%s': %s",
 				dnsViewName, err)
 		}
-		if err = d.Set("network_view", dnsViewObj.NetworkView); err != nil {
+		if dnsViewObj.NetworkView == nil {
+			return fmt.Errorf("no network view's name information received from Infoblox NIOS server for DNS view with reference '%s'; this must not happen", newRecord.Ref)
+		}
+		if err = d.Set("network_view", *dnsViewObj.NetworkView); err != nil {
 			return err
 		}
 	}
@@ -158,13 +164,16 @@ func resourceARecordGet(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("failed getting A-record: %s", err.Error())
 	}
 
-	if err = d.Set("ip_addr", obj.Ipv4Addr); err != nil {
+	if obj.Ipv4Addr == nil {
+		return fmt.Errorf("no IP address information received from Infoblox NIOS server for A-record with reference '%s'; this must not happen", obj.Ref)
+	}
+	if err = d.Set("ip_addr", *obj.Ipv4Addr); err != nil {
 		return err
 	}
 
-	ttl := int(obj.Ttl)
-	if !obj.UseTtl {
-		ttl = ttlUndef
+	ttl := ttlUndef
+	if obj.UseTtl != nil && obj.Ttl != nil && *obj.UseTtl {
+		ttl = int(*obj.Ttl)
 	}
 	if err = d.Set("ttl", ttl); err != nil {
 		return err
@@ -183,8 +192,10 @@ func resourceARecordGet(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	if err = d.Set("comment", obj.Comment); err != nil {
-		return err
+	if obj.Comment != nil {
+		if err = d.Set("comment", *obj.Comment); err != nil {
+			return err
+		}
 	}
 
 	if err = d.Set("dns_view", obj.View); err != nil {
@@ -197,12 +208,18 @@ func resourceARecordGet(d *schema.ResourceData, m interface{}) error {
 				"error while retrieving information about DNS view '%s': %s",
 				obj.View, err)
 		}
-		if err = d.Set("network_view", dnsView.NetworkView); err != nil {
+		if dnsView.NetworkView == nil {
+			return fmt.Errorf("no network view's name information received from Infoblox NIOS server for DNS view with reference '%s'; this must not happen", dnsView.Ref)
+		}
+		if err = d.Set("network_view", *dnsView.NetworkView); err != nil {
 			return err
 		}
 	}
 
-	if err = d.Set("fqdn", obj.Name); err != nil {
+	if obj.Name == nil {
+		return fmt.Errorf("no FQDN information received from Infoblox NIOS server for A-record with reference '%s'; this must not happen", obj.Ref)
+	}
+	if err = d.Set("fqdn", *obj.Name); err != nil {
 		return err
 	}
 
@@ -297,7 +314,10 @@ func resourceARecordUpdate(d *schema.ResourceData, m interface{}) error {
 		if err != nil {
 			return fmt.Errorf("failed getting A-record: %s", err.Error())
 		}
-		ipAddr = aRec.Ipv4Addr
+		if aRec.Ipv4Addr == nil {
+			return fmt.Errorf("no IP address information received from Infoblox NIOS server for A-record with reference '%s'; this must not happen", aRec.Ref)
+		}
+		ipAddr = *aRec.Ipv4Addr
 	}
 
 	rec, err := objMgr.UpdateARecord(
@@ -308,7 +328,10 @@ func resourceARecordUpdate(d *schema.ResourceData, m interface{}) error {
 	updateSuccessful = true
 	d.SetId(rec.Ref)
 
-	if err = d.Set("ip_addr", rec.Ipv4Addr); err != nil {
+	if rec.Ipv4Addr == nil {
+		return fmt.Errorf("no IP address information received from Infoblox NIOS server for A-record with reference '%s'; this must not happen", rec.Ref)
+	}
+	if err = d.Set("ip_addr", *rec.Ipv4Addr); err != nil {
 		return err
 	}
 

@@ -244,8 +244,11 @@ func resourceAllocationRequest(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	} else {
-		if err := d.Set("allocated_ipv6_addr", hostRec.Ipv6Addrs[0].Ipv6Addr); err != nil {
-			return err
+		ipAddr := hostRec.Ipv6Addrs[0].Ipv6Addr
+		if ipAddr != nil {
+			if err := d.Set("allocated_ipv6_addr", *ipAddr); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -254,8 +257,11 @@ func resourceAllocationRequest(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	} else {
-		if err := d.Set("allocated_ipv4_addr", hostRec.Ipv4Addrs[0].Ipv4Addr); err != nil {
-			return err
+		ipAddr := hostRec.Ipv4Addrs[0].Ipv4Addr
+		if ipAddr != nil {
+			if err := d.Set("allocated_ipv4_addr", *ipAddr); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -281,12 +287,15 @@ func resourceAllocationGet(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	} else {
-		if err := d.Set("allocated_ipv6_addr", obj.Ipv6Addrs[0].Ipv6Addr); err != nil {
-			return err
-		}
-		if _, found := d.GetOk("ipv6_cidr"); !found {
-			if err := d.Set("ipv6_addr", obj.Ipv6Addrs[0].Ipv6Addr); err != nil {
+		ipAddr := obj.Ipv6Addrs[0].Ipv6Addr
+		if ipAddr != nil {
+			if err := d.Set("allocated_ipv6_addr", *ipAddr); err != nil {
 				return err
+			}
+			if _, found := d.GetOk("ipv6_cidr"); !found {
+				if err := d.Set("ipv6_addr", *ipAddr); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -295,12 +304,15 @@ func resourceAllocationGet(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	} else {
-		if err := d.Set("allocated_ipv4_addr", obj.Ipv4Addrs[0].Ipv4Addr); err != nil {
-			return err
-		}
-		if _, found := d.GetOk("ipv4_cidr"); !found {
-			if err := d.Set("ipv4_addr", obj.Ipv4Addrs[0].Ipv4Addr); err != nil {
+		ipAddr := obj.Ipv4Addrs[0].Ipv4Addr
+		if ipAddr != nil {
+			if err := d.Set("allocated_ipv4_addr", *ipAddr); err != nil {
 				return err
+			}
+			if _, found := d.GetOk("ipv4_cidr"); !found {
+				if err := d.Set("ipv4_addr", *ipAddr); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -319,11 +331,18 @@ func resourceAllocationGet(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	if err = d.Set("comment", obj.Comment); err != nil {
-		return err
+	if obj.Comment != nil {
+		if err = d.Set("comment", *obj.Comment); err != nil {
+			return err
+		}
 	}
 
-	if err = d.Set("dns_view", obj.View); err != nil {
+	if obj.View == nil {
+		return fmt.Errorf(
+			"no DNS view's name information received from Infoblox NIOS server for host record with reference '%s'; this must not happen",
+			obj.Ref)
+	}
+	if err = d.Set("dns_view", *obj.View); err != nil {
 		return err
 	}
 
@@ -331,17 +350,20 @@ func resourceAllocationGet(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err = d.Set("enable_dns", obj.EnableDns); err != nil {
+	if err = d.Set("enable_dns", obj.EnableDns != nil && *obj.EnableDns); err != nil {
 		return err
 	}
 
-	if err = d.Set("fqdn", obj.Name); err != nil {
+	if obj.Name == nil {
+		return fmt.Errorf("no FQDN information received from Infoblox NIOS server for A-record with reference '%s'; this must not happen", obj.Ref)
+	}
+	if err = d.Set("fqdn", *obj.Name); err != nil {
 		return err
 	}
 
-	ttl := int(obj.Ttl)
-	if !obj.UseTtl {
-		ttl = ttlUndef
+	ttl := ttlUndef
+	if obj.UseTtl != nil && obj.Ttl != nil && *obj.UseTtl {
+		ttl = int(*obj.Ttl)
 	}
 	if err = d.Set("ttl", ttl); err != nil {
 		return err
@@ -478,12 +500,37 @@ func resourceAllocationUpdate(d *schema.ResourceData, m interface{}) (err error)
 	)
 	if needIpv4Addr || needIpv6Addr {
 		if _, ipv4CidrFlag := d.GetOk("ipv4_cidr"); ipv4CidrFlag && len(hostRecObj.Ipv4Addrs) > 0 {
-			ipv4Addr = hostRecObj.Ipv4Addrs[0].Ipv4Addr
-			macAddr = hostRecObj.Ipv4Addrs[0].Mac
+			ipv4AddrFromNIOS := hostRecObj.Ipv4Addrs[0].Ipv4Addr
+			if ipv4AddrFromNIOS == nil {
+				return fmt.Errorf(
+					"no IPv4 address information received from Infoblox NIOS server for Host-record with reference '%s'; this must not happen",
+					hostRecObj.Ref)
+			}
+			ipv4Addr = *ipv4AddrFromNIOS
+
+			macAddrFromNIOS := hostRecObj.Ipv4Addrs[0].Mac
+			if macAddrFromNIOS == nil {
+				return fmt.Errorf(
+					"no MAC address information received from Infoblox NIOS server for Host-record with reference '%s'; this must not happen",
+					hostRecObj.Ref)
+			}
+			macAddr = *macAddrFromNIOS
 		}
 		if _, ipv6CidrFlag := d.GetOk("ipv6_cidr"); ipv6CidrFlag && len(hostRecObj.Ipv6Addrs) > 0 {
-			ipv6Addr = hostRecObj.Ipv6Addrs[0].Ipv6Addr
-			duid = hostRecObj.Ipv6Addrs[0].Duid
+			ipv6AddrFromNIOS := hostRecObj.Ipv6Addrs[0].Ipv6Addr
+			if ipv6AddrFromNIOS == nil {
+				return fmt.Errorf(
+					"no IPv6 address information received from Infoblox NIOS server for Host-record with reference '%s'; this must not happen",
+					hostRecObj.Ref)
+			}
+			ipv6Addr = *ipv6AddrFromNIOS
+			duidFromNIOS := hostRecObj.Ipv6Addrs[0].Duid
+			if duidFromNIOS == nil {
+				return fmt.Errorf(
+					"no DUID address information received from Infoblox NIOS server for Host-record with reference '%s'; this must not happen",
+					hostRecObj.Ref)
+			}
+			duid = *duidFromNIOS
 		}
 	}
 
@@ -503,13 +550,17 @@ func resourceAllocationUpdate(d *schema.ResourceData, m interface{}) (err error)
 	enableDhcp := false
 
 	if recIpV4Addr != nil {
-		macAddr = recIpV4Addr.Mac
-		enableDhcp = recIpV4Addr.EnableDhcp
+		if recIpV4Addr.Mac != nil {
+			macAddr = *recIpV4Addr.Mac
+		}
+		enableDhcp = recIpV4Addr.EnableDhcp != nil && *recIpV4Addr.EnableDhcp && macAddr != "" && macAddr != ibclient.MACADDR_ZERO
 	}
 
 	if recIpV6Addr != nil {
-		duid = recIpV6Addr.Duid
-		enableDhcp = recIpV6Addr.EnableDhcp
+		if recIpV6Addr.Duid != nil {
+			duid = *recIpV6Addr.Duid
+		}
+		enableDhcp = enableDhcp || recIpV6Addr.EnableDhcp != nil && *recIpV6Addr.EnableDhcp && duid != ""
 	}
 
 	hostRecObj, err = objMgr.UpdateHostRecord(
@@ -533,10 +584,20 @@ func resourceAllocationUpdate(d *schema.ResourceData, m interface{}) (err error)
 	if err = d.Set("ref", hostRecObj.Ref); err != nil {
 		return err
 	}
-	if err = d.Set("dns_view", hostRecObj.View); err != nil {
+
+	if hostRecObj.View == nil {
+		return fmt.Errorf(
+			"no DNS view's name information received from Infoblox NIOS server for host record with reference '%s'; this must not happen",
+			hostRecObj.Ref)
+	}
+	if err = d.Set("dns_view", *hostRecObj.View); err != nil {
 		return err
 	}
-	if err = d.Set("fqdn", hostRecObj.Name); err != nil {
+
+	if hostRecObj.Name == nil {
+		return fmt.Errorf("no FQDN information received from Infoblox NIOS server for A-record with reference '%s'; this must not happen", hostRecObj.Ref)
+	}
+	if err = d.Set("fqdn", *hostRecObj.Name); err != nil {
 		return err
 	}
 
@@ -545,8 +606,11 @@ func resourceAllocationUpdate(d *schema.ResourceData, m interface{}) (err error)
 			return err
 		}
 	} else {
-		if err := d.Set("allocated_ipv6_addr", hostRecObj.Ipv6Addrs[0].Ipv6Addr); err != nil {
-			return err
+		ipAddr := hostRecObj.Ipv6Addrs[0].Ipv6Addr
+		if ipAddr != nil {
+			if err := d.Set("allocated_ipv6_addr", *ipAddr); err != nil {
+				return err
+			}
 		}
 	}
 	if hostRecObj.Ipv4Addrs == nil || len(hostRecObj.Ipv4Addrs) < 1 {
@@ -554,8 +618,11 @@ func resourceAllocationUpdate(d *schema.ResourceData, m interface{}) (err error)
 			return err
 		}
 	} else {
-		if err := d.Set("allocated_ipv4_addr", hostRecObj.Ipv4Addrs[0].Ipv4Addr); err != nil {
-			return err
+		ipAddr := hostRecObj.Ipv4Addrs[0].Ipv4Addr
+		if ipAddr != nil {
+			if err := d.Set("allocated_ipv4_addr", *ipAddr); err != nil {
+				return err
+			}
 		}
 	}
 

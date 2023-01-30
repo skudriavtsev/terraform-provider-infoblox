@@ -140,26 +140,35 @@ func resourcePTRRecordCreate(d *schema.ResourceData, m interface{}) error {
 
 	// After reading a newly created object, IP address will be
 	// set even if it is not specified directly in the configuration of the resource,
-	if recordPTR.Ipv4Addr != "" {
-		ipAddr = recordPTR.Ipv4Addr
-	} else {
-		ipAddr = recordPTR.Ipv6Addr
+	if recordPTR.Ipv4Addr != nil && *recordPTR.Ipv4Addr != "" {
+		ipAddr = *recordPTR.Ipv4Addr
+	} else if recordPTR.Ipv6Addr != nil && *recordPTR.Ipv6Addr != "" {
+		ipAddr = *recordPTR.Ipv6Addr
 	}
-
 	if err = d.Set("ip_addr", ipAddr); err != nil {
 		return err
+	}
+
+	if recordPTR.Name == nil {
+		return fmt.Errorf(
+			"no information received from Infoblox NIOS server for PTR-record's domain name (in the record's zone) with reference '%s'; this must not happen",
+			recordPTR.Ref)
 	}
 	if err = d.Set("record_name", recordPTR.Name); err != nil {
 		return err
 	}
+
 	if val, ok := d.GetOk("network_view"); !ok || val.(string) == "" {
-		dnsViewObj, err := objMgr.GetDNSView(dnsViewName)
+		dnsView, err := objMgr.GetDNSView(dnsViewName)
 		if err != nil {
 			return fmt.Errorf(
 				"error while retrieving information about DNS view '%s': %s",
 				dnsViewName, err)
 		}
-		if err = d.Set("network_view", dnsViewObj.NetworkView); err != nil {
+		if dnsView.NetworkView == nil {
+			return fmt.Errorf("no network view's name information received from Infoblox NIOS server for DNS view with reference '%s'; this must not happen", dnsView.Ref)
+		}
+		if err = d.Set("network_view", *dnsView.NetworkView); err != nil {
 			return err
 		}
 	}
@@ -188,9 +197,9 @@ func resourcePTRRecordGet(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("getting PTR Record with ID %s failed : %s", d.Id(), err.Error())
 	}
 
-	ttl := int(obj.Ttl)
-	if !obj.UseTtl {
-		ttl = ttlUndef
+	ttl := ttlUndef
+	if obj.UseTtl != nil && obj.Ttl != nil && *obj.UseTtl {
+		ttl = int(*obj.Ttl)
 	}
 	if err = d.Set("ttl", ttl); err != nil {
 		return err
@@ -209,8 +218,10 @@ func resourcePTRRecordGet(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	if err = d.Set("comment", obj.Comment); err != nil {
-		return err
+	if obj.Comment != nil {
+		if err = d.Set("comment", *obj.Comment); err != nil {
+			return err
+		}
 	}
 
 	if err = d.Set("dns_view", obj.View); err != nil {
@@ -223,25 +234,39 @@ func resourcePTRRecordGet(d *schema.ResourceData, m interface{}) error {
 				"error while retrieving information about DNS view '%s': %s",
 				obj.View, err)
 		}
-		if err = d.Set("network_view", dnsView.NetworkView); err != nil {
+		if dnsView.NetworkView == nil {
+			return fmt.Errorf("no network view's name information received from Infoblox NIOS server for DNS view with reference '%s'; this must not happen", dnsView.Ref)
+		}
+		if err = d.Set("network_view", *dnsView.NetworkView); err != nil {
 			return err
 		}
 	}
 
-	if err = d.Set("ptrdname", obj.PtrdName); err != nil {
+	if obj.PtrdName == nil {
+		return fmt.Errorf(
+			"no information received from Infoblox NIOS server for PTR-record's FQDN (which the record points to) with reference '%s'; this must not happen",
+			obj.Ref)
+	}
+	if err = d.Set("ptrdname", *obj.PtrdName); err != nil {
 		return err
 	}
 
 	var ipAddr string
-	if obj.Ipv4Addr != "" {
-		ipAddr = obj.Ipv4Addr
-	} else {
-		ipAddr = obj.Ipv6Addr
+	if obj.Ipv4Addr != nil && *obj.Ipv4Addr != "" {
+		ipAddr = *obj.Ipv4Addr
+	} else if obj.Ipv6Addr != nil && *obj.Ipv6Addr != "" {
+		ipAddr = *obj.Ipv6Addr
 	}
 	if err = d.Set("ip_addr", ipAddr); err != nil {
 		return err
 	}
-	if err = d.Set("record_name", obj.Name); err != nil {
+
+	if obj.Name == nil {
+		return fmt.Errorf(
+			"no information received from Infoblox NIOS server for PTR-record's domain name (in the record's zone) with reference '%s'; this must not happen",
+			obj.Ref)
+	}
+	if err = d.Set("record_name", *obj.Name); err != nil {
 		return err
 	}
 
@@ -328,20 +353,18 @@ func resourcePTRRecordUpdate(d *schema.ResourceData, m interface{}) error {
 	connector := m.(ibclient.IBConnector)
 	objMgr := ibclient.NewObjectManager(connector, "Terraform", tenantID)
 
-	// Retrive the IP of PTR record.
-	// When IP is allocated using cidr and an empty IP is passed for updation
+	// Retrieve the IP of PTR record.
+	// When IP address is allocated using CIDR and an empty IP is passed for 'update' operation
 	if cidr == "" && ipAddr == "" {
 		recordPTR, err := objMgr.GetPTRRecordByRef(d.Id())
 		if err != nil {
 			return fmt.Errorf("Getting PTR Record with ID %s failed : %s", d.Id(), err.Error())
 		}
 
-		ipv4 := recordPTR.Ipv4Addr
-		ipv6 := recordPTR.Ipv6Addr
-		if len(ipv4) > 0 {
-			ipAddr = ipv4
-		} else {
-			ipAddr = ipv6
+		if recordPTR.Ipv4Addr != nil && *recordPTR.Ipv4Addr != "" {
+			ipAddr = *recordPTR.Ipv4Addr
+		} else if recordPTR.Ipv6Addr != nil && *recordPTR.Ipv6Addr != "" {
+			ipAddr = *recordPTR.Ipv6Addr
 		}
 	}
 
@@ -354,14 +377,19 @@ func resourcePTRRecordUpdate(d *schema.ResourceData, m interface{}) error {
 
 	// After reading a newly created object, IP address will be
 	// set even if it is not specified directly in the configuration of the resource,
-	if recordPTRUpdated.Ipv4Addr != "" {
-		ipAddr = recordPTRUpdated.Ipv4Addr
-	} else {
-		ipAddr = recordPTRUpdated.Ipv6Addr
+	if recordPTRUpdated.Ipv4Addr != nil && *recordPTRUpdated.Ipv4Addr != "" {
+		ipAddr = *recordPTRUpdated.Ipv4Addr
+	} else if recordPTRUpdated.Ipv6Addr != nil && *recordPTRUpdated.Ipv6Addr != "" {
+		ipAddr = *recordPTRUpdated.Ipv6Addr
 	}
-
 	if err = d.Set("ip_addr", ipAddr); err != nil {
 		return err
+	}
+
+	if recordPTRUpdated.Name == nil {
+		return fmt.Errorf(
+			"no information received from Infoblox NIOS server for PTR-record's domain name (in the record's zone) with reference '%s'; this must not happen",
+			recordPTRUpdated.Ref)
 	}
 	if err = d.Set("record_name", recordPTRUpdated.Name); err != nil {
 		return err

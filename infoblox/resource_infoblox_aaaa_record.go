@@ -127,7 +127,12 @@ func resourceAAAARecordCreate(d *schema.ResourceData, m interface{}) error {
 	}
 	d.SetId(recordAAAA.Ref)
 
-	if err = d.Set("ipv6_addr", recordAAAA.Ipv6Addr); err != nil {
+	if recordAAAA.Ipv6Addr == nil {
+		return fmt.Errorf(
+			"no IP address information received from Infoblox NIOS server for AAAA-record with reference '%s'; this must not happen",
+			recordAAAA.Ref)
+	}
+	if err = d.Set("ipv6_addr", *recordAAAA.Ipv6Addr); err != nil {
 		return err
 	}
 	if val, ok := d.GetOk("network_view"); !ok || val.(string) == "" {
@@ -137,7 +142,12 @@ func resourceAAAARecordCreate(d *schema.ResourceData, m interface{}) error {
 				"error while retrieving information about DNS view '%s': %s",
 				dnsViewName, err)
 		}
-		if err = d.Set("network_view", dnsViewObj.NetworkView); err != nil {
+		if dnsViewObj.NetworkView == nil {
+			return fmt.Errorf(
+				"no network view's name information received from Infoblox NIOS server for DNS view with reference '%s'; this must not happen",
+				recordAAAA.Ref)
+		}
+		if err = d.Set("network_view", *dnsViewObj.NetworkView); err != nil {
 			return err
 		}
 	}
@@ -165,13 +175,16 @@ func resourceAAAARecordGet(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return fmt.Errorf("getting AAAA Record with ID: %s failed: %s", d.Id(), err.Error())
 	}
-	if err = d.Set("ipv6_addr", obj.Ipv6Addr); err != nil {
+	if obj.Ipv6Addr == nil {
+		return fmt.Errorf("no IP address information received from Infoblox NIOS server for AAAA-record with reference '%s'; this must not happen", obj.Ref)
+	}
+	if err = d.Set("ipv6_addr", *obj.Ipv6Addr); err != nil {
 		return err
 	}
 
-	ttl := int(obj.Ttl)
-	if !obj.UseTtl {
-		ttl = ttlUndef
+	ttl := ttlUndef
+	if obj.UseTtl != nil && obj.Ttl != nil && *obj.UseTtl {
+		ttl = int(*obj.Ttl)
 	}
 	if err = d.Set("ttl", ttl); err != nil {
 		return err
@@ -190,8 +203,10 @@ func resourceAAAARecordGet(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	if err = d.Set("comment", obj.Comment); err != nil {
-		return err
+	if obj.Comment != nil {
+		if err = d.Set("comment", *obj.Comment); err != nil {
+			return err
+		}
 	}
 
 	if err = d.Set("dns_view", obj.View); err != nil {
@@ -204,12 +219,18 @@ func resourceAAAARecordGet(d *schema.ResourceData, m interface{}) error {
 				"error while retrieving information about DNS view '%s': %s",
 				obj.View, err)
 		}
-		if err = d.Set("network_view", dnsView.NetworkView); err != nil {
+		if dnsView.NetworkView == nil {
+			return fmt.Errorf("no network view's name information received from Infoblox NIOS server for DNS view with reference '%s'; this must not happen", dnsView.Ref)
+		}
+		if err = d.Set("network_view", *dnsView.NetworkView); err != nil {
 			return err
 		}
 	}
 
-	if err = d.Set("fqdn", obj.Name); err != nil {
+	if obj.Name == nil {
+		return fmt.Errorf("no FQDN information received from Infoblox NIOS server for AAAA-record with reference '%s'; this must not happen", obj.Ref)
+	}
+	if err = d.Set("fqdn", *obj.Name); err != nil {
 		return err
 	}
 
@@ -301,7 +322,11 @@ func resourceAAAARecordUpdate(d *schema.ResourceData, m interface{}) error {
 		if err != nil {
 			return fmt.Errorf("getting AAAA Record with ID: %s failed: %s", d.Id(), err.Error())
 		}
-		ipv6Addr = aaaaRec.Ipv6Addr
+		if aaaaRec.Ipv6Addr == nil {
+			return fmt.Errorf(
+				"no IP address information received from Infoblox NIOS server for AAAA-record with reference '%s'; this must not happen", aaaaRec.Ref)
+		}
+		ipv6Addr = *aaaaRec.Ipv6Addr
 	}
 
 	recordAAAA, err := objMgr.UpdateAAAARecord(
@@ -320,7 +345,12 @@ func resourceAAAARecordUpdate(d *schema.ResourceData, m interface{}) error {
 	updateSuccessful = true
 	d.SetId(recordAAAA.Ref)
 
-	if err = d.Set("ipv6_addr", recordAAAA.Ipv6Addr); err != nil {
+	if recordAAAA.Ipv6Addr == nil {
+		return fmt.Errorf(
+			"no IP address information received from Infoblox NIOS server for AAAA-record with reference '%s'; this must not happen",
+			recordAAAA.Ref)
+	}
+	if err = d.Set("ipv6_addr", *recordAAAA.Ipv6Addr); err != nil {
 		return err
 	}
 

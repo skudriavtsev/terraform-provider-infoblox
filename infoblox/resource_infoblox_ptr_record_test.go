@@ -2,11 +2,14 @@ package infoblox
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
 	ibclient "github.com/infobloxopen/infoblox-go-client/v2"
+	"github.com/infobloxopen/infoblox-go-client/v2/utils"
 )
 
 func validateRecordPTR(
@@ -38,38 +41,38 @@ func validateRecordPTR(
 			}
 		}
 		expPtrdName := expectedValue.PtrdName
-		if recPtr.PtrdName != expPtrdName {
+		if !reflect.DeepEqual(recPtr.PtrdName, expPtrdName) {
 			return fmt.Errorf(
 				"the value of 'ptrdname' field is '%s', but expected '%s'",
-				recPtr.PtrdName, expPtrdName)
+				safePtrValue(recPtr.PtrdName), safePtrValue(expPtrdName))
 		}
 
 		expComment := expectedValue.Comment
-		if recPtr.Comment != expComment {
+		if !reflect.DeepEqual(recPtr.Comment, expComment) {
 			return fmt.Errorf(
 				"the value of 'comment' field is '%s', but expected '%s'",
-				recPtr.Comment, expComment)
+				safePtrValue(recPtr.Comment), safePtrValue(expComment))
 		}
 
 		expName := expectedValue.Name
-		if recPtr.Name != expName {
+		if !reflect.DeepEqual(recPtr.Name, expName) {
 			return fmt.Errorf(
 				"the value of 'name' field is '%s', but expected '%s'",
-				recPtr.Name, expName)
+				safePtrValue(recPtr.Name), safePtrValue(expName))
 		}
 
 		expUseTtl := expectedValue.UseTtl
-		if recPtr.UseTtl != expUseTtl {
+		if !reflect.DeepEqual(recPtr.UseTtl, expUseTtl) {
 			return fmt.Errorf(
-				"the value of 'use_ttl' field is '%t', but expected '%t'",
-				recPtr.UseTtl, expUseTtl)
+				"the value of 'use_ttl' field is '%s', but expected '%s'",
+				safePtrValue(recPtr.UseTtl), safePtrValue(expUseTtl))
 		}
-		if expUseTtl {
+		if expUseTtl != nil && *expUseTtl {
 			expTtl := expectedValue.Ttl
-			if recPtr.Ttl != expTtl {
+			if !reflect.DeepEqual(recPtr.Ttl, expTtl) {
 				return fmt.Errorf(
-					"the value of 'ttl' field is '%d', but expected '%d'",
-					recPtr.Ttl, expTtl)
+					"the value of 'ttl' field is '%s', but expected '%s'",
+					safePtrValue(recPtr.Ttl), safePtrValue(expTtl))
 			}
 		}
 
@@ -88,17 +91,17 @@ func validateRecordPTR(
 		}
 
 		expIpv4Addr := expectedValue.Ipv4Addr
-		if recPtr.Ipv4Addr != expIpv4Addr {
+		if !reflect.DeepEqual(recPtr.Ipv4Addr, expIpv4Addr) {
 			return fmt.Errorf(
 				"the value of 'ipv4addr' field is '%s', but expected '%s'",
-				recPtr.Ipv4Addr, expIpv4Addr)
+				safePtrValue(recPtr.Ipv4Addr), safePtrValue(expIpv4Addr))
 		}
 
 		expIpv6Addr := expectedValue.Ipv6Addr
-		if recPtr.Ipv6Addr != expIpv6Addr {
+		if !reflect.DeepEqual(recPtr.Ipv6Addr, expIpv6Addr) {
 			return fmt.Errorf(
 				"the value of 'ipv6addr' field is '%s', but expected '%s'",
-				recPtr.Ipv6Addr, expIpv6Addr)
+				safePtrValue(recPtr.Ipv6Addr), safePtrValue(expIpv6Addr))
 		}
 
 		// the rest is about extensible attributes
@@ -167,10 +170,13 @@ func TestAcc_resourceRecordPTR(t *testing.T) {
 					"infoblox_ptr_record.foo",
 					&ibclient.RecordPTR{
 						View:     "default",
-						PtrdName: "testptrdname.test.com",
-						Name:     "testname.test.com",
+						PtrdName: utils.StringPtr("testptrdname.test.com"),
+						Name:     utils.StringPtr("testname.test.com"),
 						Zone:     "test.com",
-						Comment:  "PTR record created in forward mapping zone",
+						Ipv4Addr: utils.StringPtr(""),
+						Ipv6Addr: utils.StringPtr(""),
+						Comment:  utils.StringPtr("PTR record created in forward mapping zone"),
+						UseTtl:   utils.BoolPtr(false),
 						Ea: ibclient.EA{
 							"Tenant ID": "terraform_test_tenant",
 							"Location":  "Test loc",
@@ -198,10 +204,13 @@ func TestAcc_resourceRecordPTR(t *testing.T) {
 					"infoblox_ptr_record.foo",
 					&ibclient.RecordPTR{
 						View:     "default",
-						PtrdName: "testptrdname2.test.com",
-						Name:     "testname2.test.com",
+						PtrdName: utils.StringPtr("testptrdname2.test.com"),
+						Name:     utils.StringPtr("testname2.test.com"),
 						Zone:     "test.com",
-						Comment:  "PTR record created in forward mapping zone",
+						Ipv4Addr: utils.StringPtr(""),
+						Ipv6Addr: utils.StringPtr(""),
+						Comment:  utils.StringPtr("PTR record created in forward mapping zone"),
+						UseTtl:   utils.BoolPtr(false),
 						Ea: ibclient.EA{
 							"Tenant ID": "terraform_test_tenant",
 							"Location":  "Test loc2",
@@ -230,11 +239,13 @@ func TestAcc_resourceRecordPTR(t *testing.T) {
 					"infoblox_ptr_record.foo2",
 					&ibclient.RecordPTR{
 						View:     "default",
-						PtrdName: "testptrdname2.test.com",
-						Ipv4Addr: "10.0.0.2",
-						Name:     "2.0.0.10.in-addr.arpa",
+						PtrdName: utils.StringPtr("testptrdname2.test.com"),
+						Ipv4Addr: utils.StringPtr("10.0.0.2"),
+						Ipv6Addr: utils.StringPtr(""),
+						Name:     utils.StringPtr("2.0.0.10.in-addr.arpa"),
 						Zone:     "0.0.10.in-addr.arpa",
-						Comment:  "PTR record created in reverse mapping zone with IP",
+						Comment:  utils.StringPtr("PTR record created in reverse mapping zone with IP"),
+						UseTtl:   utils.BoolPtr(false),
 						Ea: ibclient.EA{
 							"Tenant ID": "terraform_test_tenant",
 							"Location":  "Test loc.",
@@ -297,11 +308,13 @@ func TestAcc_resourceRecordPTR(t *testing.T) {
 					"infoblox_ptr_record.foo2",
 					&ibclient.RecordPTR{
 						View:     "default",
-						PtrdName: "testPtrdName3.test.com",
-						Ipv4Addr: "10.0.0.4",
-						Name:     "4.0.0.10.in-addr.arpa",
+						PtrdName: utils.StringPtr("testPtrdName3.test.com"),
+						Ipv4Addr: utils.StringPtr("10.0.0.4"),
+						Ipv6Addr: utils.StringPtr(""),
+						Name:     utils.StringPtr("4.0.0.10.in-addr.arpa"),
 						Zone:     "0.0.10.in-addr.arpa",
-						Comment:  "PTR record created in reverse mapping zone with IP",
+						Comment:  utils.StringPtr("PTR record created in reverse mapping zone with IP"),
+						UseTtl:   utils.BoolPtr(false),
 						Ea: ibclient.EA{
 							"Tenant ID": "terraform_test_tenant",
 							"Location":  "Test loc.",

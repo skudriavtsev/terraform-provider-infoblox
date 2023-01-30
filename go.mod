@@ -8,5 +8,6 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.4.3
 	github.com/infobloxopen/infoblox-go-client/v2 v2.2.0
 	github.com/sirupsen/logrus v1.8.0
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
 )
+
+replace github.com/infobloxopen/infoblox-go-client/v2 => ../infoblox-go-client

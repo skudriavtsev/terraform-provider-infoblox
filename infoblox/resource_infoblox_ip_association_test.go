@@ -21,11 +21,23 @@ func validateIPAssociationIpV4Addr(a, e *ibclient.HostRecordIpv4Addr) error {
 		return fmt.Errorf("IPv4 address at a host record is expected to be non-empty")
 	}
 
-	if a.Ipv4Addr != e.Ipv4Addr || a.EnableDhcp != e.EnableDhcp || a.Mac != e.Mac {
+	if safePtrValue(a.Ipv4Addr) != safePtrValue(e.Ipv4Addr) {
 		return fmt.Errorf(
 			"IPv4 address at a host record is not the same as expected;"+
-				" actual: '%+v'; expected: '%+v'",
-			a, e)
+				" actual: '%s'; expected: '%s'",
+			safePtrValue(a.Ipv4Addr), safePtrValue(e.Ipv4Addr))
+	}
+	if safePtrValue(a.EnableDhcp) != safePtrValue(e.EnableDhcp) {
+		return fmt.Errorf(
+			"enable_dhcp value for IPv4 address at a host record is not the same as expected;"+
+				" actual: '%s'; expected: '%s'",
+			safePtrValue(a.EnableDhcp), safePtrValue(e.EnableDhcp))
+	}
+	if safePtrValue(a.Mac) != safePtrValue(e.Mac) {
+		return fmt.Errorf(
+			"MAC address associated with the IPv4 address at a host record is not the same as expected;"+
+				" actual: '%s'; expected: '%s'",
+			safePtrValue(a.Mac), safePtrValue(e.Mac))
 	}
 
 	return nil
@@ -43,11 +55,23 @@ func validateIPAssociationIpV6Addr(a, e *ibclient.HostRecordIpv6Addr) error {
 		return fmt.Errorf("IPv6 address at a host record is expected to be non-empty")
 	}
 
-	if a.Ipv6Addr != e.Ipv6Addr || a.EnableDhcp != e.EnableDhcp || a.Duid != e.Duid {
+	if safePtrValue(a.Ipv6Addr) != safePtrValue(e.Ipv6Addr) {
 		return fmt.Errorf(
 			"IPv6 address at a host record is not the same as expected;"+
-				" actual: '%+v'; expected: '%+v'",
-			a, e)
+				" actual: '%s'; expected: '%s'",
+			safePtrValue(a.Ipv6Addr), safePtrValue(e.Ipv6Addr))
+	}
+	if safePtrValue(a.EnableDhcp) != safePtrValue(e.EnableDhcp) {
+		return fmt.Errorf(
+			"enable_dhcp value for IPv6 address at a host record is not the same as expected;"+
+				" actual: '%s'; expected: '%s'",
+			safePtrValue(a.EnableDhcp), safePtrValue(e.EnableDhcp))
+	}
+	if safePtrValue(a.Duid) != safePtrValue(e.Duid) {
+		return fmt.Errorf(
+			"DUID value associated with the IPv6 address at a host record is not the same as expected;"+
+				" actual: '%s'; expected: '%s'",
+			safePtrValue(a.Duid), safePtrValue(e.Duid))
 	}
 
 	return nil
@@ -214,7 +238,7 @@ func TestAcc_resourceipAssociation(t *testing.T) {
 								"10.0.0.12",
 								"11:22:33:44:55:66",
 								true, "")},
-						[]ibclient.HostRecordIpv6Addr{},
+						nil,
 						nil,
 						true, "default",
 						"test.com", "",
