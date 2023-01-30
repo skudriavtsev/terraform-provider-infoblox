@@ -66,17 +66,18 @@ func dataSourceAAAARecordRead(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("failed getting AAAA-record: %s", err.Error())
 	}
 
-	d.SetId(aaaaRec.Ref)
 	if err := d.Set("zone", aaaaRec.Zone); err != nil {
 		return err
 	}
 	if aaaaRec.UseTtl != nil && *aaaaRec.UseTtl {
-		if err := d.Set("ttl", aaaaRec.Ttl); err != nil {
+		if err := d.Set("ttl", *aaaaRec.Ttl); err != nil {
 			return err
 		}
 	}
-	if err := d.Set("comment", aaaaRec.Comment); err != nil {
-		return err
+	if aaaaRec.Comment != nil {
+		if err := d.Set("comment", *aaaaRec.Comment); err != nil {
+			return err
+		}
 	}
 
 	dsExtAttrsVal := aaaaRec.Ea
@@ -87,6 +88,8 @@ func dataSourceAAAARecordRead(d *schema.ResourceData, m interface{}) error {
 	if err := d.Set("ext_attrs", string(dsExtAttrs)); err != nil {
 		return err
 	}
+
+	d.SetId(aaaaRec.Ref)
 
 	return nil
 }

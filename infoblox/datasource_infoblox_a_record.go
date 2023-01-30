@@ -2,7 +2,6 @@ package infoblox
 
 import (
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	ibclient "github.com/infobloxopen/infoblox-go-client/v2"
 )
@@ -69,15 +68,19 @@ func dataSourceARecordRead(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("failed getting A-record: %s", err.Error())
 	}
 
-	d.SetId(aRec.Ref)
 	if err := d.Set("zone", aRec.Zone); err != nil {
 		return err
 	}
-	if err := d.Set("ttl", aRec.Ttl); err != nil {
-		return err
+
+	if aRec.UseTtl != nil && *aRec.UseTtl {
+		if err := d.Set("ttl", *aRec.Ttl); err != nil {
+			return err
+		}
 	}
-	if err := d.Set("comment", aRec.Comment); err != nil {
-		return err
+	if aRec.Comment != nil {
+		if err := d.Set("comment", *aRec.Comment); err != nil {
+			return err
+		}
 	}
 
 	dsExtAttrsVal := aRec.Ea
@@ -88,5 +91,8 @@ func dataSourceARecordRead(d *schema.ResourceData, m interface{}) error {
 	if err := d.Set("ext_attrs", string(dsExtAttrs)); err != nil {
 		return err
 	}
+
+	d.SetId(aRec.Ref)
+
 	return nil
 }

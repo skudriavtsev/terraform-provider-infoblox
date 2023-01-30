@@ -41,10 +41,10 @@ func dataSourceNetworkViewRead(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Getting networkView %s failed : %s", name, err.Error())
 	}
 
-	d.SetId(networkView.Ref)
-
-	if err := d.Set("comment", networkView.Comment); err != nil {
-		return err
+	if networkView.Comment != nil {
+		if err := d.Set("comment", *networkView.Comment); err != nil {
+			return err
+		}
 	}
 
 	dsExtAttrsVal := networkView.Ea
@@ -56,6 +56,8 @@ func dataSourceNetworkViewRead(d *schema.ResourceData, m interface{}) error {
 	if err := d.Set("ext_attrs", string(dsExtAttrs)); err != nil {
 		return err
 	}
+
+	d.SetId(networkView.Ref)
 
 	return nil
 }

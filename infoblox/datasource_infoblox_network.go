@@ -53,8 +53,6 @@ func dataSourceIPv4NetworkRead(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("API returns a nil/empty id on network %s", cidr)
 	}
 
-	d.SetId(network.Ref)
-
 	if err := d.Set("comment", network.Comment); err != nil {
 		return err
 	}
@@ -68,5 +66,8 @@ func dataSourceIPv4NetworkRead(d *schema.ResourceData, m interface{}) error {
 	if err := d.Set("ext_attrs", string(dsExtAttrs)); err != nil {
 		return err
 	}
+
+	d.SetId(network.Ref)
+
 	return nil
 }

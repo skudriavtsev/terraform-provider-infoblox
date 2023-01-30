@@ -69,15 +69,18 @@ func dataSourceCNameRecordRead(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Getting CNAME Record failed : %s", err.Error())
 	}
 
-	d.SetId(recordCNAME.Ref)
 	if err := d.Set("zone", recordCNAME.Zone); err != nil {
 		return err
 	}
-	if err := d.Set("ttl", recordCNAME.Ttl); err != nil {
-		return err
+	if recordCNAME.UseTtl != nil && *recordCNAME.UseTtl {
+		if err := d.Set("ttl", *recordCNAME.Ttl); err != nil {
+			return err
+		}
 	}
-	if err := d.Set("comment", recordCNAME.Comment); err != nil {
-		return err
+	if recordCNAME.Comment != nil {
+		if err := d.Set("comment", *recordCNAME.Comment); err != nil {
+			return err
+		}
 	}
 
 	dsExtAttrsVal := recordCNAME.Ea
@@ -88,6 +91,8 @@ func dataSourceCNameRecordRead(d *schema.ResourceData, m interface{}) error {
 	if err := d.Set("ext_attrs", string(dsExtAttrs)); err != nil {
 		return err
 	}
+
+	d.SetId(recordCNAME.Ref)
 
 	return nil
 }

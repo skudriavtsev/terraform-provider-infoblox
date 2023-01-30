@@ -47,7 +47,6 @@ func dataSourceIpv4NetworkContainerRead(d *schema.ResourceData, m interface{}) e
 	if err != nil {
 		return fmt.Errorf("Getting NetworkContainer %s failed : %s", cidr, err.Error())
 	}
-	d.SetId(networkContainer.Ref)
 
 	if err := d.Set("comment", networkContainer.Comment); err != nil {
 		return err
@@ -62,6 +61,8 @@ func dataSourceIpv4NetworkContainerRead(d *schema.ResourceData, m interface{}) e
 	if err := d.Set("ext_attrs", string(dsExtAttrs)); err != nil {
 		return err
 	}
+
+	d.SetId(networkContainer.Ref)
 
 	return nil
 }
