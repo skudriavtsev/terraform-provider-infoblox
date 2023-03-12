@@ -48,7 +48,7 @@ func resourceMXRecord() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "",
-				Description: "Description of the MX-Record.",
+				Description: "Description of the MX-record.",
 			},
 			"ext_attrs": {
 				Type:        schema.TypeString,
@@ -136,7 +136,7 @@ func resourceMXRecordGet(d *schema.ResourceData, m interface{}) error {
 
 	obj, err := objMgr.GetMXRecordByRef(d.Id())
 	if err != nil {
-		return fmt.Errorf("failed getting MX-Record: %s", err)
+		return fmt.Errorf("failed getting MX-record: %s", err)
 	}
 
 	ttl := int(obj.Ttl)
@@ -246,7 +246,7 @@ func resourceMXRecordUpdate(d *schema.ResourceData, m interface{}) error {
 	rec, err := objMgr.UpdateMXRecord(
 		d.Id(), dnsView, fqdn, mx, preference, ttl, useTtl, comment, extAttrs)
 	if err != nil {
-		return fmt.Errorf("error updating MX-Record: %s", err)
+		return fmt.Errorf("error updating MX-record: %s", err)
 	}
 	updateSuccessful = true
 	d.SetId(rec.Ref)
@@ -272,7 +272,7 @@ func resourceMXRecordDelete(d *schema.ResourceData, m interface{}) error {
 
 	_, err := objMgr.DeleteMXRecord(d.Id())
 	if err != nil {
-		return fmt.Errorf("deletion of MX-Record failed: %s", err)
+		return fmt.Errorf("deletion of MX-record failed: %s", err)
 	}
 	d.SetId("")
 

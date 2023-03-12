@@ -25,7 +25,7 @@ func dataSourceMXRecord() *schema.Resource {
 			"fqdn": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "FQDN for the MX-Record.",
+				Description: "FQDN for the MX-record.",
 			},
 			"mail_exchanger": {
 				Type:        schema.TypeString,
@@ -40,12 +40,12 @@ func dataSourceMXRecord() *schema.Resource {
 			"ttl": {
 				Type:        schema.TypeInt,
 				Computed:    true,
-				Description: "TTL value for the TXT-Record.",
+				Description: "TTL value for the TXT-record.",
 			},
 			"comment": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "Description of the TXT-Record.",
+				Description: "Description of the TXT-record.",
 			},
 			"ext_attrs": {
 				Type:        schema.TypeString,
@@ -67,7 +67,7 @@ func dataSourceMXRecordRead(d *schema.ResourceData, m interface{}) error {
 
 	obj, err := objMgr.GetMXRecord(dnsView, fqdn, mx)
 	if err != nil {
-		return fmt.Errorf("failed getting MX-Record: %s", err)
+		return fmt.Errorf("failed getting MX-record: %s", err)
 	}
 
 	ttl := int(obj.Ttl)

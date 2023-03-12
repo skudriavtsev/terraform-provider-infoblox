@@ -25,18 +25,18 @@ func resourceTXTRecord() *schema.Resource {
 			"fqdn": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "FQDN for the TXT-Record.",
+				Description: "FQDN for the TXT-record.",
 			},
 			"text": {
 				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Data to be associated with TXT_Record, this field can be empty.",
+				Required:    true,
+				Description: "Data to be associated with TXT-record.",
 			},
 			"ttl": {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Default:     ttlUndef,
-				Description: "TTL value of the TXT-Record",
+				Description: "TTL value of the TXT-record",
 			},
 			"comment": {
 				Type:        schema.TypeString,
@@ -95,7 +95,7 @@ func resourceTXTRecordCreate(d *schema.ResourceData, m interface{}) error {
 	newRecord, err := objMgr.CreateTXTRecord(dnsView, fqdn, text, ttl, useTtl, comment, extAttrs)
 
 	if err != nil {
-		return fmt.Errorf("error creating TXT-Record: %s", err)
+		return fmt.Errorf("error creating TXT-record: %s", err)
 	}
 
 	d.SetId(newRecord.Ref)
@@ -122,7 +122,7 @@ func resourceTXTRecordGet(d *schema.ResourceData, m interface{}) error {
 
 	obj, err := objMgr.GetTXTRecordByRef(d.Id())
 	if err != nil {
-		return fmt.Errorf("failed getting TXT-Record: %s", err)
+		return fmt.Errorf("failed getting TXT-record: %s", err)
 	}
 
 	if err = d.Set("text", obj.Text); err != nil {
@@ -226,7 +226,7 @@ func resourceTXTRecordUpdate(d *schema.ResourceData, m interface{}) error {
 	rec, err := objMgr.UpdateTXTRecord(
 		d.Id(), fqdn, text, ttl, useTtl, comment, extAttrs)
 	if err != nil {
-		return fmt.Errorf("error updating TXT-Record: %s", err)
+		return fmt.Errorf("error updating TXT-record: %s", err)
 	}
 	updateSuccessful = true
 	d.SetId(rec.Ref)
@@ -252,7 +252,7 @@ func resourceTXTRecordDelete(d *schema.ResourceData, m interface{}) error {
 
 	_, err := objMgr.DeleteTXTRecord(d.Id())
 	if err != nil {
-		return fmt.Errorf("deletion of TXT-Record failed: %s", err)
+		return fmt.Errorf("deletion of TXT-record failed: %s", err)
 	}
 	d.SetId("")
 

@@ -82,7 +82,7 @@ func dataSourceSRVRecordRead(d *schema.ResourceData, m interface{}) error {
 
 	srvRec, err := objMgr.GetSRVRecord(dnsView, name, target, port)
 	if err != nil {
-		return fmt.Errorf("failed getting SRV-Record: %s", err)
+		return fmt.Errorf("failed getting SRV-record: %s", err)
 	}
 	d.SetId(srvRec.Ref)
 	if err := d.Set("priority", srvRec.Priority); err != nil {

@@ -140,7 +140,7 @@ func resourceSRVRecordGet(d *schema.ResourceData, m interface{}) error {
 
 	obj, err := objMgr.GetSRVRecordByRef(d.Id())
 	if err != nil {
-		return fmt.Errorf("failed getting SRV-Record: %s", err.Error())
+		return fmt.Errorf("failed getting SRV-record: %s", err.Error())
 	}
 
 	ttl := int(obj.Ttl)
@@ -258,7 +258,7 @@ func resourceSRVRecordUpdate(d *schema.ResourceData, m interface{}) error {
 	rec, err := objMgr.UpdateSRVRecord(
 		d.Id(), name, uint32(priority), uint32(weight), uint32(port), target, ttl, useTtl, comment, extAttrs)
 	if err != nil {
-		return fmt.Errorf("error updating SRV-Record: %s", err.Error())
+		return fmt.Errorf("error updating SRV-record: %s", err.Error())
 	}
 	updateSuccessful = true
 	d.SetId(rec.Ref)
@@ -285,7 +285,7 @@ func resourceSRVRecordDelete(d *schema.ResourceData, m interface{}) error {
 
 	_, err := objMgr.DeleteSRVRecord(d.Id())
 	if err != nil {
-		return fmt.Errorf("deletion of MX-Record failed: %s", err.Error())
+		return fmt.Errorf("deletion of MX-record failed: %s", err.Error())
 	}
 	d.SetId("")
 

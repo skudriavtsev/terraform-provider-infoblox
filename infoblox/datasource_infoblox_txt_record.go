@@ -30,22 +30,22 @@ func dataSourceTXTRecord() *schema.Resource {
 			"fqdn": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "FQDN for the TXT-Record.",
+				Description: "FQDN for the TXT-record.",
 			},
 			"text": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "Data of the TXT-Record.",
+				Description: "Data of the TXT-record.",
 			},
 			"ttl": {
 				Type:        schema.TypeInt,
 				Computed:    true,
-				Description: "TTL value for the TXT-Record.",
+				Description: "TTL value for the TXT-record.",
 			},
 			"comment": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "Description of the TXT-Record.",
+				Description: "Description of the TXT-record.",
 			},
 			"ext_attrs": {
 				Type:        schema.TypeString,
@@ -65,7 +65,7 @@ func dataSourceTXTRecordRead(d *schema.ResourceData, m interface{}) error {
 
 	obj, err := objMgr.GetTXTRecord(dnsView, fqdn)
 	if err != nil {
-		return fmt.Errorf("failed getting TXT-Record: %s", err)
+		return fmt.Errorf("failed getting TXT-record: %s", err)
 	}
 
 	if err = d.Set("text", obj.Text); err != nil {
